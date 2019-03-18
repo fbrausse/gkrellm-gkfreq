@@ -1,14 +1,14 @@
-CMD_CC ?= gcc
+CC ?= gcc
 CFLAGS ?= -O2
 LDFLAGS ?=
 
 all: gkrellm-gkfreq.so
 
 gkrellm-gkfreq.o: gkrellm-gkfreq.c
-	$(CMD_CC) -fPIC $(CFLAGS) -Wall `pkg-config gtk+-2.0 --cflags` -c gkrellm-gkfreq.c
+	$(CC) -fPIC $(CFLAGS) -Wall `pkg-config gtk+-2.0 --cflags` -c gkrellm-gkfreq.c
 
 gkrellm-gkfreq.so: gkrellm-gkfreq.o
-	$(CMD_CC) -shared $(LDFLAGS) -Wall -o gkrellm-gkfreq.so gkrellm-gkfreq.o
+	$(CC) -shared $(LDFLAGS) -Wall -o gkrellm-gkfreq.so gkrellm-gkfreq.o
 	@echo " "
 	@echo "    Compilation done!"
 	@echo " "
