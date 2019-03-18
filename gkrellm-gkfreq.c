@@ -92,6 +92,7 @@ struct GKFreqStruct{
 static GkrellmMonitor *monitor;
 static GkrellmPanel   *panel;
 static gint           style_id;
+static GkrellmTicks   *pGK;
 
 static struct    GKFreqStruct cpu[MAX_NUM_CPU];
 static gint      num_cpu; // number of CPUs
@@ -171,6 +172,11 @@ static gint panel_expose_event(GtkWidget *widget, GdkEventExpose *ev) {
 // Redrawing the graphic components of the plugin.
 static void update_plugin() {
   gint i;
+  /* This routine is called at the update rate which is 2 - 10
+  |  times per second.
+  */
+  if (!pGK->second_tick)
+    return;
   
   // Get all CPU frequencies and calculate max, avg & min
   for (i=0; i<num_cpu; i++) {
@@ -467,7 +473,8 @@ static GkrellmMonitor	plugin_mon = {
 GkrellmMonitor * gkrellm_init_plugin() {
 
   mode = MODE_VAL_ALL;
-  
+
+  pGK = gkrellm_ticks();
   style_id = gkrellm_add_meter_style(&plugin_mon, STYLE_NAME);
   monitor = &plugin_mon;
   return &plugin_mon;
