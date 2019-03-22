@@ -87,6 +87,7 @@ struct GKFreqStruct{
     GkrellmDecal  *label_cpu;
     gint          freq;
     GkrellmDecal  *label_freq;
+    FILE          *freq_file;
 };
 
 static GkrellmMonitor *monitor;
@@ -96,67 +97,24 @@ static GkrellmTicks   *pGK;
 
 static struct    GKFreqStruct cpu[MAX_NUM_CPU];
 static gint      num_cpu; // number of CPUs
-       GtkWidget *vbox_panel;
-       GtkWidget *comboMode;
-       gint      mode;
+static GtkWidget *vbox_panel;
+static GtkWidget *comboMode;
+static gint      mode;
 
-// Get the CPU frequency (in MHz) for CPU number cpu_desired
-static gint get_cpu_freq(gint cpu_desired) {
-  // Variables needed for reading the file
-  FILE *f;
-  char *line = NULL;
-  size_t len = 0;
-  ssize_t read;
-  
+// Get all CPU frequencies (in KHz)
+static void get_cpu_freq() {
   // Variables for finding freq for the desired CPU.
-  int cpusection = -1; // Counter for keeping track of current CPU section in the file content.
-  int cpu_freq = -1;   // CPU frequency that was found.
-  
-  f = fopen("/proc/cpuinfo", "r");
-  if (f == NULL) {
-    printf("ERROR: GKRELLM-GKREQ: couldnt open /proc/cpuinfo for reading.\n");
-    return -1;
-  }
-  
-  // The /proc/cpuinfo has a format like this:
-  //   processor  : 0
-  //   ...
-  //   cpu MHz    : 3706.000
-  //   ...
-  //   
-  //   processor  : 1
-  //   ...
-  //   cpu MHz    : 3774.000
-  //   ...
-  //
-  
-  // Step through the file content line by line.
-  while ((read = getline(&line, &len, f)) != -1) {
-    // See if this line is the beginning of a new CPU section. Then we expect something on the format "processor : 0".
-    int cpu_idx;
-    int valuesfound;
-    valuesfound = sscanf(line, "processor : %d", &cpu_idx);
-    if (valuesfound == 1) {
-      // A match was found. => A new CPU section begins
-      cpusection = cpu_idx;
-    }else{
-      // See if this line contains the CPU frequency. Then we expect something on the format "cpu MHz   : 3706.000".
-      float flt_cpu_freq;
-      valuesfound = sscanf(line, "cpu MHz : %f", &flt_cpu_freq);
-      if (valuesfound == 1) {
-        // A match was found. => We've got a CPU frequency!
-        
-        // Check that it is the frequency for the desired CPU that was found.
-        if (cpusection == cpu_desired) {
-          cpu_freq = (int) flt_cpu_freq;
-          break;
-        }
-      }
+  int cpu_idx;
+  size_t rd;
+
+  for (cpu_idx=0; cpu_idx<num_cpu; cpu_idx++) {
+    fseek(cpu[cpu_idx].freq_file, 0, SEEK_SET);
+    static char buf[64];
+    if ((rd = fread(buf, 1, sizeof(buf), cpu[cpu_idx].freq_file)) > 0) {
+      buf[MAX(rd,sizeof(buf)-1)] = '\0';
+      cpu[cpu_idx].freq = atoi(buf);
     }
   }
-  fclose(f);
-  free(line);
-  return cpu_freq;
 }
 
 // Callback function to be run when a panel is exposed for the first time.
@@ -177,26 +135,24 @@ static void update_plugin() {
   */
   if (!pGK->second_tick)
     return;
-  
+
   // Get all CPU frequencies and calculate max, avg & min
-  for (i=0; i<num_cpu; i++) {
-    cpu[i].freq = get_cpu_freq(i);
-  }
+  get_cpu_freq();
   gint freq_max = cpu[0].freq;
+  gint freq_min = cpu[0].freq;
+  gint freq_avg = cpu[0].freq;
   for (i=1; i<num_cpu; i++) {
-    freq_max = fmax(freq_max, cpu[i].freq);
-  }
-  gint freq_avg = 0;
-  for (i=0; i<num_cpu; i++) {
+    if (cpu[i].freq < freq_min)
+      freq_min = cpu[i].freq;
+    if (cpu[i].freq > freq_max)
+      freq_max = cpu[i].freq;
     freq_avg += cpu[i].freq;
   }
-  freq_avg = freq_avg/num_cpu;
-  gint freq_min = cpu[0].freq;
-  for (i=1; i<num_cpu; i++) {
-    freq_min = fmin(freq_min, cpu[i].freq);
-  }
+  freq_avg /= num_cpu * 1000;
+  freq_max /= 1000;
+  freq_min /= 1000;
 
-  gchar text_freq[20];
+  gchar text_freq[32];
   // Check mode and create labels accordingly
   if (mode == MODE_VAL_MAXAVGMIN) {
     // Max
@@ -269,9 +225,10 @@ static void create_plugin(GtkWidget *vbox, gint first_create) {
   // Count the number of CPUs
   if (first_create) {
     for (num_cpu=0; num_cpu<MAX_NUM_CPU; num_cpu++){
-      if (get_cpu_freq(num_cpu) < 0) {
+      static char path[64];
+      snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq", num_cpu);
+      if (!(cpu[num_cpu].freq_file = fopen(path, "r")))
         break;
-      }
     }
   }
   
