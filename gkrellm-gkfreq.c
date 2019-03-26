@@ -64,7 +64,7 @@
 #define MAX_NUM_CPU             64
 // Spacings between the text labels
 #define SPACING_BETWEEN_ROWS    1
-#define SPACING_BETWEEN_COLS    0
+#define SPACING_BETWEEN_COLS    4
 
 // Define modes - DON'T CHANGE THE NUMBERS, THEY HAVE TO BE ADDED IN NUMERIC ORDER LATER ON...
 #define MODE_VAL_ALL            0
@@ -108,12 +108,12 @@ static void get_cpu_freq() {
   size_t rd;
 
   for (cpu_idx=0; cpu_idx<num_cpu; cpu_idx++) {
-    fseek(cpu[cpu_idx].freq_file, 0, SEEK_SET);
     static char buf[64];
     if ((rd = fread(buf, 1, sizeof(buf), cpu[cpu_idx].freq_file)) > 0) {
       buf[MAX(rd,sizeof(buf)-1)] = '\0';
       cpu[cpu_idx].freq = atoi(buf);
     }
+    fseek(cpu[cpu_idx].freq_file, 0, SEEK_SET);
   }
 }
 
@@ -157,15 +157,15 @@ static void update_plugin() {
   if (mode == MODE_VAL_MAXAVGMIN) {
     // Max
     gkrellm_draw_decal_text(panel, cpu[0].label_cpu, "Max", 0);    
-    sprintf(text_freq, "%d MHz", freq_max);
+    sprintf(text_freq, "%.2f GHz", freq_max / 1000.0);
     gkrellm_draw_decal_text(panel, cpu[0].label_freq, text_freq, 0);
     // Avg
     gkrellm_draw_decal_text(panel, cpu[1].label_cpu, "Avg", 0);    
-    sprintf(text_freq, "%d MHz", freq_avg);
+    sprintf(text_freq, "%.2f GHz", freq_avg / 1000.0);
     gkrellm_draw_decal_text(panel, cpu[1].label_freq, text_freq, 0);
     // Min
     gkrellm_draw_decal_text(panel, cpu[2].label_cpu, "Min", 0);    
-    sprintf(text_freq, "%d MHz", freq_min);
+    sprintf(text_freq, "%.2f GHz", freq_min / 1000.0);
     gkrellm_draw_decal_text(panel, cpu[2].label_freq, text_freq, 0);
     
   }else if (mode == MODE_VAL_MAX) {
@@ -190,7 +190,7 @@ static void update_plugin() {
       gchar text_cpu[10];
       sprintf(text_cpu, "CPU%d", i);
       gkrellm_draw_decal_text(panel, cpu[i].label_cpu, text_cpu, 0);
-      sprintf(text_freq, "%d MHz", cpu[i].freq);
+      sprintf(text_freq, "%d MHz", cpu[i].freq / 1000);
       gkrellm_draw_decal_text(panel, cpu[i].label_freq, text_freq, 0);
     }
   }
@@ -224,9 +224,12 @@ static void create_plugin(GtkWidget *vbox, gint first_create) {
 
   // Count the number of CPUs
   if (first_create) {
+    char path[64];
     for (num_cpu=0; num_cpu<MAX_NUM_CPU; num_cpu++){
-      static char path[64];
-      snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq", num_cpu);
+      snprintf(path, sizeof(path)-1,
+               "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq",
+               num_cpu);
+      path[sizeof(path)-1] = '\0';
       if (!(cpu[num_cpu].freq_file = fopen(path, "r")))
         break;
     }
