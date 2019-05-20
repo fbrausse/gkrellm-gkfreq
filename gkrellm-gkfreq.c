@@ -2,6 +2,8 @@
     GKrellM-gkfreq
     
     A plugin to GKrellM that displays the current CPU frequencies.
+
+    Copyright 2019 Franz Brausse <fb@paxle.org>
     
     Authors:
     Erik Kjellson <erikiiofph7@users.sourceforge.net>

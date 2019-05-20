@@ -1,3 +1,11 @@
+Version 2.5   2019-05-20
+===========
+Makefile uses standard CC variable instead of custom CMD_CC.
+Update only every pGK->second_tick () to reduce CPU load.
+Use /sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq instead of
+/proc/cpuinfo because it is a) faster to parse and b) not x86-specific.
+Display frequencies as 'x.xx GHz' instead of integer MHz.
+
 
 Version 2.4   2014-12-23
 ===========
