@@ -41,11 +41,20 @@
 
 
 // Version of the plugin
-#define PLUGIN_VERSION          "2.4"
-// My email address
-#define EMAIL_ADDRESS           "erikiiofph7@users.sourceforge.net"
-// Sourceforge homepage for the plugin_info_text&firstvalue
-#define HOMEPAGE_URL            "http://sourceforge.net/projects/gkrellm-gkfreq/"
+#define PLUGIN_VERSION          "2.5"
+#define HOMEPAGE_URL            "https://github.com/fbrausse/gkrellm-gkfreq"
+
+// Text that will show up in the "About" tab of the config window.
+#define ABOUT_TEXT                                                                  \
+	CONFIG_NAME " version " PLUGIN_VERSION "\n"                                 \
+	"A plugin to GKrellM that displays the current CPU frequencies.\n\n"        \
+	HOMEPAGE_URL "\n\n"                                                         \
+	"Authors:\n"                                                                \
+	"  Franz Brausse <fb@paxle.org>\n"                                          \
+	"  Erik Kjellson <erikiiofph7@users.sourceforge.net> (up to version 2.4)\n" \
+	"  Brad Davis <brad@peakunix.net> (version 1.0)\n\n"                        \
+	"Copyright (C) 2005-2014, 2019\n"                                           \
+	"Released under the GNU General Public License\n"
 
 // STYLE_NAME will be the theme subdirectory for custom images for this
 //  plugin and it will be the gkrellmrc style name for custom settings.
@@ -79,10 +88,6 @@
 #define MODE_LBL_AVG            "Show average CPU frequency"
 #define MODE_VAL_MIN            4
 #define MODE_LBL_MIN            "Show minimum CPU frequency"
-
-// Max length of text on the About tab in the config window.
-#define ABOUT_STRING_MAXLEN     350
-
 
 // Definition of CPU structure
 struct GKFreqStruct{
@@ -389,21 +394,11 @@ static void create_plugin_tab(GtkWidget *tab_vbox) {
                             1); /* Row number to attach bottom to */
     
     // About tab
-    // Text that will show up in the "About" tab of the config window.
-    static gchar about_text[ABOUT_STRING_MAXLEN+1];
-    sprintf(about_text, "%s version %s\n"
-                        "A plugin to GKrellM that displays the current CPU frequencies.\n\n"
-                        "%s\n\n"
-                        "Authors:\n"
-                        "  Erik Kjellson <%s>\n\n"
-                        "  Brad Davis <brad@peakunix.net> (version 1.0)\n"
-                        "Copyright (C) 2005-2014\n"
-                        "Released under the GNU General Public License\n"
-                        ,CONFIG_NAME, PLUGIN_VERSION, HOMEPAGE_URL, EMAIL_ADDRESS);
+
     vbox = gkrellm_gtk_framed_notebook_page(tabs, "About");
     text = gkrellm_gtk_scrolled_text_view(vbox, NULL,
                     GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gkrellm_gtk_text_view_append(text, &about_text[0]);
+    gkrellm_gtk_text_view_append(text, ABOUT_TEXT);
 }
 
 // Mandatory GKrellM plugin data structure
